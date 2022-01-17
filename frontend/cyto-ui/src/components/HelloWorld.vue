@@ -62,10 +62,18 @@ export default {
       console.log(cy)
     },
     addNode(event) {
-      
+      console.log(event.originalEvent.layerX)
+      console.log(event.originalEvent.layerY)
       console.log(event.target, this.$refs.cyRef.instance);
-      if (event.target === this.$refs.cyRef.instance)
+      const newNode = {
+        data: { id: "d" },
+        position: { x: 489, y: 400 },
+        group: "nodes"
+      }
+      if (event.target === this.$refs.cyRef.instance){
+        this.elements = [...elements, newNode]
         console.log("adding node", event.target);
+      }
     },
     deleteNode(id) {
       console.log("node clicked", id);

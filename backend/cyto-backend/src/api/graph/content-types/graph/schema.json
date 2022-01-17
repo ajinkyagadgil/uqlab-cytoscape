@@ -1,0 +1,25 @@
+{
+  "kind": "collectionType",
+  "collectionName": "graphs",
+  "info": {
+    "singularName": "graph",
+    "pluralName": "graphs",
+    "displayName": "Graphs"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Id": {
+      "type": "uid",
+      "required": true
+    },
+    "Name": {
+      "type": "string"
+    },
+    "data": {
+      "type": "json"
+    }
+  }
+}
