@@ -1,5 +1,22 @@
 <template>
-  <v-container>
+  <div id="hello">
+    <cytoscape
+      ref="cyRef"
+      :config="config"
+      v-on:mousedown="addNode"
+      v-on:cxttapstart="updateNode"
+      :preConfig="preConfig"
+      :afterCreated="afterCreated"
+    >
+      <cy-element
+        v-for="def in elements"
+        :key="`${def.data.id}`"
+        :definition="def"
+        v-on:mousedown="addEdges(def.data.id)"
+      />
+    </cytoscape>
+  </div>
+  <!-- <v-container>
     <v-row class="text-center">
       <v-col cols="12">
         <v-img
@@ -88,64 +105,183 @@
         </v-row>
       </v-col>
     </v-row>
-  </v-container>
+  </v-container> -->
 </template>
 
 <script>
-  export default {
-    name: 'HelloWorld',
+import config from "../cyto-config";
+import jquery from "jquery";
+import contextMenus from "cytoscape-context-menus";
+import "cytoscape-context-menus/cytoscape-context-menus.css";
 
-    data: () => ({
-      ecosystem: [
-        {
-          text: 'vuetify-loader',
-          href: 'https://github.com/vuetifyjs/vuetify-loader',
+// import cytoscape from 'cytoscape';
+import edgehandles from "cytoscape-edgehandles";
+
+// const elements = [...config.elements];
+const elements = [];
+delete config.elements;
+export default {
+  name: "HelloWorld",
+  data() {
+    return {
+      config,
+      elements,
+    };
+  },
+  methods: {
+    async getData() {
+      const res = await fetch("http://localhost:1337/api/graphs");
+      return res.json();
+    },
+    testAddNode(cy) {
+      console.log(cy);
+    },
+    addNode(event) {
+      if (event.target === this.$refs.cyRef.instance) {
+        console.log(event.originalEvent.layerX);
+        console.log(event.originalEvent.layerY);
+        console.log(event.target, this.$refs.cyRef.instance);
+        const newNode = {
+          data: { id: "d" },
+          position: { x: 489, y: 400 },
+          group: "nodes",
+        };
+        //test node for cy event
+        const nextNode = {
+          data: { id: "e" },
+          position: { x: 490, y: 450 },
+          group: "nodes",
+        };
+        event.cy.add(nextNode);
+        console.log("cy is", event.cy);
+        this.elements = [...this.elements, newNode];
+        console.log("adding node", event.target);
+      }
+    },
+    addEdges(id) {
+      console.log("node click", id);
+    },
+    deleteNode(id) {
+      console.log("node clicked", id);
+    },
+    updateNode(event) {
+      console.log("right click node", event);
+    },
+    preConfig(cytoscape) {
+      contextMenus(cytoscape, jquery);
+      edgehandles(cytoscape);
+      // cytoscape.use(edgehandles);
+      console.log("calling pre-config", cytoscape);
+    },
+    afterCreated(cy) {
+      // cy: this is the cytoscape instance
+      console.log("after created", cy);
+      cy.contextMenus({
+        menuItems: [
+          {
+            id: "remove",
+            content: "remove",
+            tooltipText: "remove",
+            image: { src: "remove.svg", width: 12, height: 12, x: 6, y: 4 },
+            selector: "node, edge",
+            onClickFunction: function (event) {
+              var target = event.target || event.cyTarget;
+              target.remove();
+            },
+            hasTrailingDivider: true,
+          },
+          {
+            id: "hide",
+            content: "hide",
+            tooltipText: "hide",
+            selector: "*",
+            onClickFunction: function (event) {
+              var target = event.target || event.cyTarget;
+              target.hide();
+            },
+            disabled: false,
+          },
+        ],
+      });
+      var eh = cy.edgehandles({
+        canConnect: function (sourceNode, targetNode) {
+          // whether an edge can be created between source and target
+          return !sourceNode.same(targetNode); // e.g. disallow loops
         },
-        {
-          text: 'github',
-          href: 'https://github.com/vuetifyjs/vuetify',
+        edgeParams: function (sourceNode, targetNode) {
+          console.log("Soure node is", sourceNode);
+          console.log("Dest node is", targetNode);
+          // for edges between the specified source and target
+          // return element object to be passed to cy.add() for edge
+          return {};
         },
-        {
-          text: 'awesome-vuetify',
-          href: 'https://github.com/vuetifyjs/awesome-vuetify',
-        },
-      ],
-      importantLinks: [
-        {
-          text: 'Documentation',
-          href: 'https://vuetifyjs.com',
-        },
-        {
-          text: 'Chat',
-          href: 'https://community.vuetifyjs.com',
-        },
-        {
-          text: 'Made with Vuetify',
-          href: 'https://madewithvuejs.com/vuetify',
-        },
-        {
-          text: 'Twitter',
-          href: 'https://twitter.com/vuetifyjs',
-        },
-        {
-          text: 'Articles',
-          href: 'https://medium.com/vuetify',
-        },
-      ],
-      whatsNext: [
-        {
-          text: 'Explore components',
-          href: 'https://vuetifyjs.com/components/api-explorer',
-        },
-        {
-          text: 'Select a layout',
-          href: 'https://vuetifyjs.com/getting-started/pre-made-layouts',
-        },
-        {
-          text: 'Frequently Asked Questions',
-          href: 'https://vuetifyjs.com/getting-started/frequently-asked-questions',
-        },
-      ],
-    }),
-  }
+        hoverDelay: 150, // time spent hovering over a target node before it is considered selected
+        snap: true, // when enabled, the edge can be drawn by just moving close to a target node (can be confusing on compound graphs)
+        snapThreshold: 50, // the target node must be less than or equal to this many pixels away from the cursor/finger
+        snapFrequency: 15, // the number of times per second (Hz) that snap checks done (lower is less expensive)
+        noEdgeEventsInDraw: true, // set events:no to edges during draws, prevents mouseouts on compounds
+        disableBrowserGestures: true, // during an edge drawing gesture, disable browser gestures such as two-finger trackpad swipe and pinch-to-zoom
+        enableDrawMode: true,
+      });
+      eh.enableDrawMode();
+    },
+  },
+  async created() {
+    const { data } = await this.getData();
+    console.log(data[0].attributes.data.nodes);
+    this.elements = [...data[0].attributes.data.nodes];
+  },
+  // data: () => ({
+  //   ecosystem: [
+  //     {
+  //       text: 'vuetify-loader',
+  //       href: 'https://github.com/vuetifyjs/vuetify-loader',
+  //     },
+  //     {
+  //       text: 'github',
+  //       href: 'https://github.com/vuetifyjs/vuetify',
+  //     },
+  //     {
+  //       text: 'awesome-vuetify',
+  //       href: 'https://github.com/vuetifyjs/awesome-vuetify',
+  //     },
+  //   ],
+  //   importantLinks: [
+  //     {
+  //       text: 'Documentation',
+  //       href: 'https://vuetifyjs.com',
+  //     },
+  //     {
+  //       text: 'Chat',
+  //       href: 'https://community.vuetifyjs.com',
+  //     },
+  //     {
+  //       text: 'Made with Vuetify',
+  //       href: 'https://madewithvuejs.com/vuetify',
+  //     },
+  //     {
+  //       text: 'Twitter',
+  //       href: 'https://twitter.com/vuetifyjs',
+  //     },
+  //     {
+  //       text: 'Articles',
+  //       href: 'https://medium.com/vuetify',
+  //     },
+  //   ],
+  //   whatsNext: [
+  //     {
+  //       text: 'Explore components',
+  //       href: 'https://vuetifyjs.com/components/api-explorer',
+  //     },
+  //     {
+  //       text: 'Select a layout',
+  //       href: 'https://vuetifyjs.com/getting-started/pre-made-layouts',
+  //     },
+  //     {
+  //       text: 'Frequently Asked Questions',
+  //       href: 'https://vuetifyjs.com/getting-started/frequently-asked-questions',
+  //     },
+  //   ],
+  // }),
+};
 </script>

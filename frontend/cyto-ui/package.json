@@ -9,6 +9,10 @@
   },
   "dependencies": {
     "core-js": "^3.6.5",
+    "cytoscape-context-menus": "^4.1.0",
+    "cytoscape-cxtmenu": "^3.4.0",
+    "cytoscape-edgehandles": "^4.0.1",
+    "jquery": "^3.6.0",
     "vue": "^2.6.11",
     "vue-cytoscape": "^1.0.8",
     "vuetify": "^2.4.0"
