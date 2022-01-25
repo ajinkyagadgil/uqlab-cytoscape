@@ -1,5 +1,7 @@
 <template>
   <div id="hello">
+    <button id="draw-on" style="color: red">Draw mode on</button>
+    <button id="draw-off" @click="saveData()">Save</button>
     <cytoscape
       ref="cyRef"
       :config="config"
@@ -113,6 +115,7 @@ import config from "../cyto-config";
 import jquery from "jquery";
 import contextMenus from "cytoscape-context-menus";
 import "cytoscape-context-menus/cytoscape-context-menus.css";
+import axios from "axios";
 
 // import cytoscape from 'cytoscape';
 import edgehandles from "cytoscape-edgehandles";
@@ -126,6 +129,8 @@ export default {
     return {
       config,
       elements,
+      isDrawMode: false,
+      json1_data:"",
     };
   },
   methods: {
@@ -153,10 +158,37 @@ export default {
           group: "nodes",
         };
         event.cy.add(nextNode);
+        event.cy.add(newNode)
+        console.log("Event data is", event.cy.data());
         console.log("cy is", event.cy);
         this.elements = [...this.elements, newNode];
         console.log("adding node", event.target);
+        this.saveChanges(event.cy);
       }
+    },
+    saveData() {
+      const s = this.json1_data
+
+      const dataToSave = {
+        data: {
+          Graph_Id: "graph8",
+          Name:"graph 8",
+          data: s
+        }
+      }
+      // console.log(JSON.stringify(data))
+      axios.post("http://localhost:1337/api/graphs", dataToSave)
+        .then((response) => {
+          console.log(response);
+        });
+    },
+    saveChanges(cy) {
+      console.log("The cy in save changes is", cy.json()["elements"]);
+      console.log(
+        "JSON data in save changes",
+        JSON.stringify(cy.json()["elements"])
+      );
+      this.json1_data = cy.json()["elements"]
     },
     addEdges(id) {
       console.log("node click", id);
@@ -166,6 +198,9 @@ export default {
     },
     updateNode(event) {
       console.log("right click node", event);
+    },
+    drawModeToggle() {
+      this.isDrawMode = !this.isDrawMode;
     },
     preConfig(cytoscape) {
       contextMenus(cytoscape, jquery);
@@ -211,25 +246,62 @@ export default {
         edgeParams: function (sourceNode, targetNode) {
           console.log("Soure node is", sourceNode);
           console.log("Dest node is", targetNode);
+          console.log("This is cy", cy);
           // for edges between the specified source and target
           // return element object to be passed to cy.add() for edge
+
+          // const newEdge = {
+          //   data: {
+          //     id: sourceNode + targetNode,
+          //     source: sourceNode,
+          //     target: targetNode,
+          //   },
+          //   group:"edges"
+          // };
+          // cy.add(newEdge)
+          // this.saveChanges()
           return {};
         },
+        cxt: true,
+        enabled: true,
         hoverDelay: 150, // time spent hovering over a target node before it is considered selected
         snap: true, // when enabled, the edge can be drawn by just moving close to a target node (can be confusing on compound graphs)
         snapThreshold: 50, // the target node must be less than or equal to this many pixels away from the cursor/finger
         snapFrequency: 15, // the number of times per second (Hz) that snap checks done (lower is less expensive)
-        noEdgeEventsInDraw: true, // set events:no to edges during draws, prevents mouseouts on compounds
+        noEdgeEventsInDraw: false, // set events:no to edges during draws, prevents mouseouts on compounds
         disableBrowserGestures: true, // during an edge drawing gesture, disable browser gestures such as two-finger trackpad swipe and pinch-to-zoom
-        enableDrawMode: true,
       });
+      console.log("Draw Mode", this.isDrawMode);
+
+      document.querySelector("#draw-on").addEventListener("click", function () {
+        eh.enableDrawMode();
+      });
+
+      document
+        .querySelector("#draw-off")
+        .addEventListener("click", function () {
+          eh.disableDrawMode();
+        });
+      // if (this.$toggle) {
+      //   eh.enableDrawMode();
+      // } else {
+      //   eh.disableDrawMode();
+      // }
+      // if(this.isDrawMode) {
       eh.enableDrawMode();
+      console.log(eh);
+      // }
     },
   },
   async created() {
     const { data } = await this.getData();
-    console.log(data[0].attributes.data.nodes);
+    console.log("The data is", JSON.stringify(data));
     this.elements = [...data[0].attributes.data.nodes];
+     //this.elements = [...data[3].attributes.data.nodes, ...data[3].attributes.data.edges];
+    console.log(
+      "The elements after adding nodes are",
+      JSON.stringify(this.elements)
+    );
   },
   // data: () => ({
   //   ecosystem: [

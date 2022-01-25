@@ -22,9 +22,6 @@
     },
     "data": {
       "type": "json"
-    },
-    "testData": {
-      "type": "text"
     }
   }
 }

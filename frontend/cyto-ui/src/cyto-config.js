@@ -28,10 +28,11 @@ const config = {
       {
         selector: "edge",
         style: {
-          width: 3,
+          width: 5,
           "line-color": "#ccc",
-          "target-arrow-color": "#ccc",
-          "target-arrow-shape": "triangle"
+          "target-arrow-color": "#bbb",
+          "target-arrow-shape": "triangle",
+          "curve-style": "bezier"
         }
       }
     ],
