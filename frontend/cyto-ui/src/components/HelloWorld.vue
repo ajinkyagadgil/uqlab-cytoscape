@@ -171,8 +171,8 @@ export default {
 
       const dataToSave = {
         data: {
-          Graph_Id: "graph8",
-          Name:"graph 8",
+          Graph_Id: "graph110",
+          Name:"graph 110",
           data: s
         }
       }
