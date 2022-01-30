@@ -8,6 +8,6 @@ Vue.use(Router)
 export default new Router({
     routes: [
         { path: '/', component: GraphListing },
-        { path: '/graph', component: HelloWorld },
+        { path: '/graph/:id', name:"Graph", component: HelloWorld },
     ]
 })

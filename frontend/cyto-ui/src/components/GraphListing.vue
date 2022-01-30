@@ -1,7 +1,7 @@
 <template>
   <v-data-table
     :headers="headers"
-    :items="desserts"
+    :items="graphs[0].data"
     sort-by="calories"
     class="elevation-1"
   >
@@ -100,19 +100,12 @@ export default {
     dialog: false,
     dialogDelete: false,
     headers: [
-      {
-        text: "Dessert (100g serving)",
-        align: "start",
-        sortable: false,
-        value: "name",
-      },
-      { text: "Calories", value: "calories" },
-      { text: "Fat (g)", value: "fat" },
-      { text: "Carbs (g)", value: "carbs" },
-      { text: "Protein (g)", value: "protein" },
+      { text: "Graph Id", value: "attributes.Graph_Id" },
+      { text: "Graph Name", value: "attributes.Name" },
       { text: "Actions", value: "actions", sortable: false },
     ],
     desserts: [],
+    graphs: [],
     editedIndex: -1,
     editedItem: {
       name: "",
@@ -144,11 +137,6 @@ export default {
       val || this.closeDelete();
     },
   },
-
-  created() {
-    this.initialize();
-  },
-
   methods: {
     initialize() {
       this.desserts = [
@@ -226,6 +214,7 @@ export default {
     },
 
     editItem(item) {
+      this.$router.push({ name: "Graph", params: { id: item.id } });
       this.editedIndex = this.desserts.indexOf(item);
       this.editedItem = Object.assign({}, item);
       this.dialog = true;
@@ -266,6 +255,16 @@ export default {
       }
       this.close();
     },
+
+    async fetchData() {
+      const res = await fetch("http://localhost:1337/api/graphs");
+      return res.json();
+    },
+  },
+  async created() {
+    this.initialize();
+    const graphData = await this.fetchData();
+    this.graphs = [...this.graphs, graphData];
   },
 };
 </script>

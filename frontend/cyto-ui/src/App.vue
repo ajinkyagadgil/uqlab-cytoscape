@@ -28,6 +28,7 @@
         <v-list-item
           v-for="item in items"
           :key="item.title"
+          :to="item.path"
           link
         >
           <v-list-item-icon>
@@ -63,7 +64,7 @@ export default {
     //
     drawer: true,
     items: [
-      { title: "Home", icon: "mdi-home-city" },
+      { title: "Home", icon: "mdi-home-city",  path:'/' },
       { title: "My Account", icon: "mdi-account" },
       { title: "Users", icon: "mdi-account-group-outline" },
     ],

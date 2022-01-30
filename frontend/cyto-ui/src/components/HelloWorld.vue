@@ -134,8 +134,8 @@ export default {
     };
   },
   methods: {
-    async getData() {
-      const res = await fetch("http://localhost:1337/api/graphs");
+    async getGraphData(id) {
+      const res = await fetch(`http://localhost:1337/api/graphs/${id}`);
       return res.json();
     },
     testAddNode(cy) {
@@ -143,9 +143,9 @@ export default {
     },
     addNode(event) {
       if (event.target === this.$refs.cyRef.instance) {
-        console.log(event.originalEvent.layerX);
-        console.log(event.originalEvent.layerY);
-        console.log(event.target, this.$refs.cyRef.instance);
+        // console.log(event.originalEvent.layerX);
+        // console.log(event.originalEvent.layerY);
+        // console.log(event.target, this.$refs.cyRef.instance);
         const newNode = {
           data: { id: "d" },
           position: { x: 489, y: 400 },
@@ -203,12 +203,17 @@ export default {
       this.isDrawMode = !this.isDrawMode;
     },
     preConfig(cytoscape) {
-      contextMenus(cytoscape, jquery);
+      if (!cytoscape('core', 'contextMenus')) {
+    //cytoscape.use(cxtmenu);
+     contextMenus(cytoscape, jquery);
       edgehandles(cytoscape);
+  }
+     
       // cytoscape.use(edgehandles);
       console.log("calling pre-config", cytoscape);
     },
     afterCreated(cy) {
+      console.log("After created called")
       // cy: this is the cytoscape instance
       console.log("after created", cy);
       cy.contextMenus({
@@ -294,15 +299,14 @@ export default {
     },
   },
   async created() {
-    const { data } = await this.getData();
+    const { data } = await this.getGraphData(this.$route.params.id);
     console.log("The data is", JSON.stringify(data));
-    this.elements = [...data[0].attributes.data.nodes];
+    this.elements = [...data.attributes.data.nodes,...data.attributes.data.edges];
      //this.elements = [...data[3].attributes.data.nodes, ...data[3].attributes.data.edges];
-    console.log(
-      "The elements after adding nodes are",
-      JSON.stringify(this.elements)
-    );
   },
+  mounted() {
+    console.log("Mounted");
+  }
   // data: () => ({
   //   ecosystem: [
   //     {
