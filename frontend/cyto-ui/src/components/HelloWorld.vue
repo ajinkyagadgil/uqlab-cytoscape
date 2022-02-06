@@ -1,22 +1,99 @@
 <template>
   <div id="hello">
-    <button id="draw-on" style="color: red">Draw mode on</button>
-    <button id="draw-off" @click="saveData()">Save</button>
-    <cytoscape
-      ref="cyRef"
-      :config="config"
-      v-on:mousedown="addNode"
-      v-on:cxttapstart="updateNode"
-      :preConfig="preConfig"
-      :afterCreated="afterCreated"
-    >
-      <cy-element
-        v-for="def in elements"
-        :key="`${def.data.id}`"
-        :definition="def"
-        v-on:mousedown="addEdges(def.data.id)"
-      />
-    </cytoscape>
+    <div id="cyto" ref="cyto">
+      <!-- <button id="draw-on" style="color: red">Draw mode on</button>
+    <button id="draw-off" @click="saveData()">Save</button> -->
+      <cytoscape
+        ref="cyRef"
+        :config="config"
+        v-on:mousedown="addNodeDetails"
+        v-on:cxttapstart="updateNode"
+        :preConfig="preConfig"
+        :afterCreated="afterCreated"
+      >
+        <cy-element
+          v-for="def in elements"
+          :key="`${def.data.id}`"
+          :definition="def"
+          v-on:mousedown="addEdges(def.data.id)"
+        />
+        <v-dialog v-model="dialog" max-width="500px">
+          <v-card>
+            <v-card-title>
+              <span class="text-h5">Add Node</span>
+            </v-card-title>
+
+            <v-card-text>
+              <v-container>
+                <v-row>
+                  <v-col>
+                    <v-text-field
+                      v-model="nodeDetails.node_name"
+                      label="Node Name"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-checkbox
+                      v-model="nodeDetails.selected"
+                      label="Selected"
+                      required
+                      @change="$v.checkbox.$touch()"
+                      @blur="$v.checkbox.$touch()"
+                    ></v-checkbox>
+                  </v-col>
+                  <v-col>
+                    <v-checkbox
+                      v-model="nodeDetails.selectable"
+                      label="Selectable"
+                      required
+                      @change="$v.checkbox.$touch()"
+                      @blur="$v.checkbox.$touch()"
+                    ></v-checkbox>
+                  </v-col>
+                  <v-col>
+                    <v-checkbox
+                      v-model="nodeDetails.locked"
+                      label="Locked"
+                      required
+                      @change="$v.checkbox.$touch()"
+                      @blur="$v.checkbox.$touch()"
+                    ></v-checkbox>
+                  </v-col>
+                  <v-col>
+                    <v-checkbox
+                      v-model="nodeDetails.grabbable"
+                      label="Grabbable"
+                      required
+                      @change="$v.checkbox.$touch()"
+                      @blur="$v.checkbox.$touch()"
+                    ></v-checkbox>
+                  </v-col>
+                  <v-col>
+                    <v-checkbox
+                      v-model="nodeDetails.pannable"
+                      label="Pannable"
+                      required
+                      @change="$v.checkbox.$touch()"
+                      @blur="$v.checkbox.$touch()"
+                    ></v-checkbox>
+                  </v-col>
+                </v-row>
+              </v-container>
+            </v-card-text>
+
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
+              <v-btn color="blue darken-1" text @click="addNode">
+                Add Node
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </cytoscape>
+    </div>
   </div>
   <!-- <v-container>
     <v-row class="text-center">
@@ -116,6 +193,7 @@ import jquery from "jquery";
 import contextMenus from "cytoscape-context-menus";
 import "cytoscape-context-menus/cytoscape-context-menus.css";
 import axios from "axios";
+import cytoscape from "cytoscape";
 
 // import cytoscape from 'cytoscape';
 import edgehandles from "cytoscape-edgehandles";
@@ -127,57 +205,121 @@ export default {
   name: "HelloWorld",
   data() {
     return {
+      dialog: false,
       config,
       elements,
       isDrawMode: false,
-      json1_data:"",
+      json1_data: "",
+      nodeDetails: {
+        node_name: "",
+        x_point: 0,
+        y_point: 0,
+        selected: false,
+        selectable: false,
+        locked: false,
+        grabbable: true,
+        pannable: true,
+      },
+      defaultItem: {
+        node_name: "",
+        x_point: 0,
+        y_point: 0,
+        selected: false,
+        selectable: false,
+        locked: false,
+        grabbable: true,
+        pannable: true,
+      },
+      cy: null,
     };
   },
+  watch: {
+    dialog(val) {
+      val || this.close();
+    },
+  },
   methods: {
+    getCy: function () {
+      return null;
+    },
+    close() {
+      this.dialog = false;
+      this.$nextTick(() => {
+        this.editedItem = Object.assign({}, this.defaultItem);
+        this.editedIndex = -1;
+      });
+    },
+    addNode() {
+      // console.log("This is cy ref",this.$refs.cyRef.cy)
+      const nextNode = {
+        data: { id: this.nodeDetails.node_name },
+        position: { x: this.nodeDetails.x_point, y: this.nodeDetails.y_point },
+        group: "nodes",
+        selected: this.nodeDetails.selected,
+        selectable: this.nodeDetails.selectable,
+        locked: this.nodeDetails.locked,
+        grabbable: this.nodeDetails.grabbable,
+        pannable: this.nodeDetails.pannable,
+      };
+      let cy = this.getCy();
+      //cy.add(nextNode)
+      this.elements = [...this.elements, nextNode];
+      console.log("The cy obj is", cy);
+      console.log(nextNode);
+      this.dialog = false;
+      console.log(JSON.stringify(this.elements));
+    },
     async getGraphData(id) {
       const res = await fetch(`http://localhost:1337/api/graphs/${id}`);
       return res.json();
     },
-    testAddNode(cy) {
-      console.log(cy);
-    },
-    addNode(event) {
+    addNodeDetails(event) {
+      this.nodeDetails = {
+        node_name: "",
+        x_point: 0,
+        y_point: 0,
+      };
       if (event.target === this.$refs.cyRef.instance) {
+        this.nodeDetails.x_point = event.originalEvent.layerX;
+        this.nodeDetails.y_point = event.originalEvent.layerY;
+        this.dialog = true;
+
         // console.log(event.originalEvent.layerX);
         // console.log(event.originalEvent.layerY);
         // console.log(event.target, this.$refs.cyRef.instance);
-        const newNode = {
-          data: { id: "d" },
-          position: { x: 489, y: 400 },
-          group: "nodes",
-        };
-        //test node for cy event
-        const nextNode = {
-          data: { id: "e" },
-          position: { x: 490, y: 450 },
-          group: "nodes",
-        };
-        event.cy.add(nextNode);
-        event.cy.add(newNode)
-        console.log("Event data is", event.cy.data());
-        console.log("cy is", event.cy);
-        this.elements = [...this.elements, newNode];
-        console.log("adding node", event.target);
-        this.saveChanges(event.cy);
+        // const newNode = {
+        //   data: { id: "d" },
+        //   position: { x: 489, y: 400 },
+        //   group: "nodes",
+        // };
+        // //test node for cy event
+        // const nextNode = {
+        //   data: { id: "e" },
+        //   position: { x: 490, y: 450 },
+        //   group: "nodes",
+        // };
+        // event.cy.add(nextNode);
+        // event.cy.add(newNode);
+        // console.log("Event data is", event.cy.data());
+        // console.log("cy is", event.cy);
+        // this.elements = [...this.elements, newNode];
+        // console.log("adding node", event.target);
+        // this.saveChanges(event.cy);
       }
     },
     saveData() {
-      const s = this.json1_data
+      const s = this.json1_data;
 
       const dataToSave = {
         data: {
           Graph_Id: "graph110",
-          Name:"graph 110",
-          data: s
-        }
-      }
+          Name: "graph 110",
+          data: s,
+        },
+      };
       // console.log(JSON.stringify(data))
-      axios.post("http://localhost:1337/api/graphs", dataToSave)
+      axios
+        .post("http://localhost:1337/api/graphs", dataToSave)
         .then((response) => {
           console.log(response);
         });
@@ -188,7 +330,7 @@ export default {
         "JSON data in save changes",
         JSON.stringify(cy.json()["elements"])
       );
-      this.json1_data = cy.json()["elements"]
+      this.json1_data = cy.json()["elements"];
     },
     addEdges(id) {
       console.log("node click", id);
@@ -203,17 +345,17 @@ export default {
       this.isDrawMode = !this.isDrawMode;
     },
     preConfig(cytoscape) {
-      if (!cytoscape('core', 'contextMenus')) {
-    //cytoscape.use(cxtmenu);
-     contextMenus(cytoscape, jquery);
-      edgehandles(cytoscape);
-  }
-     
+      if (!cytoscape("core", "contextMenus")) {
+        //cytoscape.use(cxtmenu);
+        contextMenus(cytoscape, jquery);
+        edgehandles(cytoscape);
+      }
+
       // cytoscape.use(edgehandles);
       console.log("calling pre-config", cytoscape);
     },
     afterCreated(cy) {
-      console.log("After created called")
+      console.log("After created called");
       // cy: this is the cytoscape instance
       console.log("after created", cy);
       cy.contextMenus({
@@ -278,15 +420,15 @@ export default {
       });
       console.log("Draw Mode", this.isDrawMode);
 
-      document.querySelector("#draw-on").addEventListener("click", function () {
-        eh.enableDrawMode();
-      });
+      // document.querySelector("#draw-on").addEventListener("click", function () {
+      //   eh.enableDrawMode();
+      // });
 
-      document
-        .querySelector("#draw-off")
-        .addEventListener("click", function () {
-          eh.disableDrawMode();
-        });
+      // document
+      //   .querySelector("#draw-off")
+      //   .addEventListener("click", function () {
+      //     eh.disableDrawMode();
+      //   });
       // if (this.$toggle) {
       //   eh.enableDrawMode();
       // } else {
@@ -301,12 +443,24 @@ export default {
   async created() {
     const { data } = await this.getGraphData(this.$route.params.id);
     console.log("The data is", JSON.stringify(data));
-    this.elements = [...data.attributes.data.nodes,...data.attributes.data.edges];
-     //this.elements = [...data[3].attributes.data.nodes, ...data[3].attributes.data.edges];
+    if (data.attributes.data != null) {
+      this.elements = [
+        ...data.attributes.data.nodes,
+        ...data.attributes.data.edges,
+      ];
+    }
+    //this.elements = [...data[3].attributes.data.nodes, ...data[3].attributes.data.edges];
   },
   mounted() {
-    console.log("Mounted");
-  }
+    const cy = cytoscape({
+      container: this.$refs.cyto,
+      // elements: [{data: { id: "a" }}]
+    });
+    // this.cy = cy;
+    this.getCy = () => {
+      return cy;
+    };
+  },
   // data: () => ({
   //   ecosystem: [
   //     {
@@ -361,3 +515,11 @@ export default {
   // }),
 };
 </script>
+<style>
+#cyto {
+  width: 1170px;
+  height: 600px;
+  display: block;
+  background-color: cornsilk;
+}
+</style>

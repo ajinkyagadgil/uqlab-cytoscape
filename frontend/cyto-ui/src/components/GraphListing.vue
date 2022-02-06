@@ -24,19 +24,19 @@
             <v-card-text>
               <v-container>
                 <v-row>
-                  <v-col cols="12" sm="6" md="4">
+                  <!-- <v-col cols="12" sm="6" md="4">
                     <v-text-field
-                      v-model="editedItem.name"
-                      label="Dessert name"
+                      v-model="editedItem.graph_id"
+                      label="Graoh Id"
+                    ></v-text-field>
+                  </v-col> -->
+                  <v-col>
+                    <v-text-field
+                      v-model="editedItem.graph_name"
+                      label="Graph Name"
                     ></v-text-field>
                   </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field
-                      v-model="editedItem.calories"
-                      label="Calories"
-                    ></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6" md="4">
+                  <!-- <v-col cols="12" sm="6" md="4">
                     <v-text-field
                       v-model="editedItem.fat"
                       label="Fat (g)"
@@ -53,7 +53,7 @@
                       v-model="editedItem.protein"
                       label="Protein (g)"
                     ></v-text-field>
-                  </v-col>
+                  </v-col> -->
                 </v-row>
               </v-container>
             </v-card-text>
@@ -95,12 +95,12 @@
 </template>
 
 <script>
+import axios from "axios";
 export default {
   data: () => ({
     dialog: false,
     dialogDelete: false,
     headers: [
-      { text: "Graph Id", value: "attributes.Graph_Id" },
       { text: "Graph Name", value: "attributes.Name" },
       { text: "Actions", value: "actions", sortable: false },
     ],
@@ -108,24 +108,25 @@ export default {
     graphs: [],
     editedIndex: -1,
     editedItem: {
-      name: "",
-      calories: 0,
-      fat: 0,
-      carbs: 0,
-      protein: 0,
+      // graph_id: "",
+      graph_name: "",
+      // fat: 0,
+      // carbs: 0,
+      // protein: 0,
     },
     defaultItem: {
-      name: "",
-      calories: 0,
-      fat: 0,
-      carbs: 0,
-      protein: 0,
+      // graph_id: "",
+      graph_name: "",
+      // name: "",
+      // calories: 0,
+      // fat: 0,
+      // carbs: 0,
+      // protein: 0,
     },
   }),
-
   computed: {
     formTitle() {
-      return this.editedIndex === -1 ? "New Item" : "Edit Item";
+      return this.editedIndex === -1 ? "New Graph" : "Edit Graph";
     },
   },
 
@@ -247,12 +248,31 @@ export default {
       });
     },
 
-    save() {
-      if (this.editedIndex > -1) {
-        Object.assign(this.desserts[this.editedIndex], this.editedItem);
-      } else {
-        this.desserts.push(this.editedItem);
-      }
+    async save() {
+      console.log("Added item is", JSON.stringify(this.editedItem));
+      const graphNameCreate = {
+        data: {
+          Name: this.editedItem.graph_name,
+        },
+      };
+      // console.log(JSON.stringify(data))
+      axios
+        .post("http://localhost:1337/api/graphs", graphNameCreate)
+        .then((response) => {
+          if (response.status == 200) {
+            console.log("The response is", response.data.data.id);
+            this.$router.push({ name: "Graph", params: { id: response.data.data.id } });
+          }
+        });
+      // if (this.editedIndex > -1) {
+      //   Object.assign(this.desserts[this.editedIndex], this.editedItem);
+      // } else {
+      //   this.desserts.push(this.editedItem);
+      // }
+      const { graphData } = await this.fetchData();
+      // console.log("The id created is", graphData)
+      this.graphs.push(graphData);
+      // this.graphs = [...this.graphs, graphData];
       this.close();
     },
 

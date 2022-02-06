@@ -12,10 +12,6 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "Graph_Id": {
-      "type": "uid",
-      "required": true
-    },
     "Name": {
       "type": "string",
       "required": true

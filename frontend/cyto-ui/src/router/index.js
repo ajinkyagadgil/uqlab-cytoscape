@@ -4,10 +4,10 @@ import HelloWorld from '../components/HelloWorld.vue'
 import GraphListing from '../components/GraphListing.vue'
 
 Vue.use(Router)
-
 export default new Router({
     routes: [
         { path: '/', component: GraphListing },
         { path: '/graph/:id', name:"Graph", component: HelloWorld },
     ]
 })
+
