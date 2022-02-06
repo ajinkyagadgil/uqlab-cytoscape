@@ -265,7 +265,6 @@ export default {
       //cy.add(nextNode)
       this.elements = [...this.elements, nextNode];
       console.log("The cy obj is", cy);
-      console.log(nextNode);
       this.dialog = false;
       console.log(JSON.stringify(this.elements));
     },
