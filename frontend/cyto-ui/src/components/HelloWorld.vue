@@ -15,12 +15,13 @@
           v-for="def in elements"
           :key="`${def.data.id}`"
           :definition="def"
-          v-on:mousedown="addEdges(def.data.id)"
+          v-on:cxttap="deleteGraphNode(def.data.id)"
+          v-on:mousedown="updateGraphNode(def.data.id)"
         />
         <v-dialog v-model="dialog" max-width="500px">
           <v-card>
             <v-card-title>
-              <span class="text-h5">Add Node</span>
+              <span class="text-h5">{{ formTitle }}</span>
             </v-card-title>
 
             <v-card-text>
@@ -38,45 +39,30 @@
                     <v-checkbox
                       v-model="nodeDetails.selected"
                       label="Selected"
-                      required
-                      @change="$v.checkbox.$touch()"
-                      @blur="$v.checkbox.$touch()"
                     ></v-checkbox>
                   </v-col>
                   <v-col>
                     <v-checkbox
                       v-model="nodeDetails.selectable"
                       label="Selectable"
-                      required
-                      @change="$v.checkbox.$touch()"
-                      @blur="$v.checkbox.$touch()"
                     ></v-checkbox>
                   </v-col>
                   <v-col>
                     <v-checkbox
                       v-model="nodeDetails.locked"
                       label="Locked"
-                      required
-                      @change="$v.checkbox.$touch()"
-                      @blur="$v.checkbox.$touch()"
                     ></v-checkbox>
                   </v-col>
                   <v-col>
                     <v-checkbox
                       v-model="nodeDetails.grabbable"
                       label="Grabbable"
-                      required
-                      @change="$v.checkbox.$touch()"
-                      @blur="$v.checkbox.$touch()"
                     ></v-checkbox>
                   </v-col>
                   <v-col>
                     <v-checkbox
                       v-model="nodeDetails.pannable"
                       label="Pannable"
-                      required
-                      @change="$v.checkbox.$touch()"
-                      @blur="$v.checkbox.$touch()"
                     ></v-checkbox>
                   </v-col>
                 </v-row>
@@ -86,9 +72,24 @@
             <v-card-actions>
               <v-spacer></v-spacer>
               <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
-              <v-btn color="blue darken-1" text @click="addNode">
-                Add Node
-              </v-btn>
+              <v-btn color="blue darken-1" text @click="addNode"> Save </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+        <v-dialog v-model="dialogDelete" max-width="500px">
+          <v-card>
+            <v-card-title class="text-h5"
+              >Are you sure you want to delete this item?</v-card-title
+            >
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" text @click="closeDelete"
+                >Cancel</v-btn
+              >
+              <v-btn color="blue darken-1" text @click="deleteItemConfirm"
+                >OK</v-btn
+              >
+              <v-spacer></v-spacer>
             </v-card-actions>
           </v-card>
         </v-dialog>
@@ -190,8 +191,8 @@
 
 <script>
 import config from "../cyto-config";
-import jquery from "jquery";
-import contextMenus from "cytoscape-context-menus";
+// import jquery from "jquery";
+// import contextMenus from "cytoscape-context-menus";
 import "cytoscape-context-menus/cytoscape-context-menus.css";
 import axios from "axios";
 import cytoscape from "cytoscape";
@@ -207,10 +208,12 @@ export default {
   data() {
     return {
       dialog: false,
+      dialogDelete: false,
       config,
       elements,
       isDrawMode: false,
       json1_data: "",
+      editedIndex: -1,
       nodeDetails: {
         node_name: "",
         x_point: 0,
@@ -234,30 +237,41 @@ export default {
       cy: null,
     };
   },
+  computed: {
+    formTitle() {
+      return this.editedIndex === -1 ? "New Graph" : "Edit Graph";
+    },
+  },
   watch: {
     dialog(val) {
       val || this.close();
     },
+    dialogDelete(val) {
+      val || this.closeDelete();
+    },
   },
   methods: {
-    saveAll(){
-      let n = this.elements.filter(x => x.group == "nodes");
-      let e = this.elements.filter(x => x.group == "edges")
+    saveAll() {
+      let n = this.elements.filter((x) => x.group == "nodes");
+      let e = this.elements.filter((x) => x.group == "edges");
       console.log("The nodes are", JSON.stringify(n));
-      console.log("The edges are",JSON.stringify(e));
-      console.log("Final Changes are", JSON.stringify(this.elements))
-       let graphData = {
-         nodes: n,
-         edges: e
-       }
-       console.log("Final data to be saved is", JSON.stringify(graphData));
-       const dataToSave = {
+      console.log("The edges are", JSON.stringify(e));
+      console.log("Final Changes are", JSON.stringify(this.elements));
+      let graphData = {
+        nodes: n,
+        edges: e,
+      };
+      console.log("Final data to be saved is", JSON.stringify(graphData));
+      const dataToSave = {
         data: {
-          data: graphData
+          data: graphData,
         },
       };
-       axios
-        .put(`http://localhost:1337/api/graphs/${this.$route.params.id}`, dataToSave)
+      axios
+        .put(
+          `http://localhost:1337/api/graphs/${this.$route.params.id}`,
+          dataToSave
+        )
         .then((response) => {
           console.log(response);
         });
@@ -269,29 +283,56 @@ export default {
     close() {
       this.dialog = false;
       this.$nextTick(() => {
-        this.editedItem = Object.assign({}, this.defaultItem);
+        this.nodeDetails = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
     },
+    closeDelete() {
+      this.dialogDelete = false;
+      this.$nextTick(() => {
+        this.nodeDetails = Object.assign({}, this.defaultItem);
+        this.editedIndex = -1;
+      });
+    },
+    deleteItemConfirm() {
+      this.elements.splice(this.editedIndex, 1);
+      this.closeDelete();
+    },
     addEdgesToObject(edge) {
-      this.elements = [...this.elements, edge]
+      this.elements = [...this.elements, edge];
     },
     addNode() {
       // console.log("This is cy ref",this.$refs.cyRef.cy)
-      const nextNode = {
-        data: { id: this.nodeDetails.node_name },
-        position: { x: this.nodeDetails.x_point, y: this.nodeDetails.y_point },
-        group: "nodes",
-        selected: this.nodeDetails.selected,
-        selectable: this.nodeDetails.selectable,
-        locked: this.nodeDetails.locked,
-        grabbable: this.nodeDetails.grabbable,
-        pannable: this.nodeDetails.pannable,
-      };
-      let cy = this.getCy();
+      console.log("Edited index is", this.editedIndex);
+      if (this.editedIndex == -1) {
+        //add new node {
+        const nextNode = {
+          data: { id: this.nodeDetails.node_name },
+          position: {
+            x: this.nodeDetails.x_point,
+            y: this.nodeDetails.y_point,
+          },
+          group: "nodes",
+          selected: this.nodeDetails.selected,
+          selectable: this.nodeDetails.selectable,
+          locked: this.nodeDetails.locked,
+          grabbable: this.nodeDetails.grabbable,
+          pannable: this.nodeDetails.pannable,
+        };
+        this.elements = [...this.elements, nextNode];
+      } else {
+        let element = this.elements[this.editedIndex];
+        console.log("The original element is", JSON.stringify(element));
+        element.data.id = this.nodeDetails.node_name;
+        element.selected= this.nodeDetails.selected;
+        element.selectable= this.nodeDetails.selectable;
+        element.locked= this.nodeDetails.locked;
+        element.grabbable= this.nodeDetails.grabbable;
+        element.pannable= this.nodeDetails.pannable;
+        console.log("AAfter update", JSON.stringify(this.elements));
+      }
       //cy.add(nextNode)
-      this.elements = [...this.elements, nextNode];
-      console.log("The cy obj is", cy);
+
       this.dialog = false;
       console.log(JSON.stringify(this.elements));
     },
@@ -308,63 +349,64 @@ export default {
       if (event.target === this.$refs.cyRef.instance) {
         this.nodeDetails.x_point = event.originalEvent.layerX;
         this.nodeDetails.y_point = event.originalEvent.layerY;
+        this.nodeDetails.selected = this.defaultItem.selected;
+        this.nodeDetails.selectable = this.defaultItem.selectable;
+        this.nodeDetails.locked = this.defaultItem.locked;
+        this.nodeDetails.grabbable = this.defaultItem.grabbable;
+        this.nodeDetails.pannable = this.defaultItem.pannable;
         this.dialog = true;
-
-        // console.log(event.originalEvent.layerX);
-        // console.log(event.originalEvent.layerY);
-        // console.log(event.target, this.$refs.cyRef.instance);
-        // const newNode = {
-        //   data: { id: "d" },
-        //   position: { x: 489, y: 400 },
-        //   group: "nodes",
-        // };
-        // //test node for cy event
-        // const nextNode = {
-        //   data: { id: "e" },
-        //   position: { x: 490, y: 450 },
-        //   group: "nodes",
-        // };
-        // event.cy.add(nextNode);
-        // event.cy.add(newNode);
-        // console.log("Event data is", event.cy.data());
-        // console.log("cy is", event.cy);
-        // this.elements = [...this.elements, newNode];
-        // console.log("adding node", event.target);
-        // this.saveChanges(event.cy);
       }
     },
-    saveData() {
-      const s = this.json1_data;
+    // saveData() {
+    //   const s = this.json1_data;
 
-      const dataToSave = {
-        data: {
-          Graph_Id: "graph110",
-          Name: "graph 110",
-          data: s,
-        },
-      };
-      // console.log(JSON.stringify(data))
-      axios
-        .post("http://localhost:1337/api/graphs", dataToSave)
-        .then((response) => {
-          console.log(response);
-        });
+    //   const dataToSave = {
+    //     data: {
+    //       Graph_Id: "graph110",
+    //       Name: "graph 110",
+    //       data: s,
+    //     },
+    //   };
+    //   // console.log(JSON.stringify(data))
+    //   axios
+    //     .post("http://localhost:1337/api/graphs", dataToSave)
+    //     .then((response) => {
+    //       console.log(response);
+    //     });
+    // },
+    // saveChanges(cy) {
+    //   console.log("The cy in save changes is", cy.json()["elements"]);
+    //   console.log(
+    //     "JSON data in save changes",
+    //     JSON.stringify(cy.json()["elements"])
+    //   );
+    //   this.json1_data = cy.json()["elements"];
+    // },
+    updateGraphNode(id) {
+      let node = this.elements.find((x) => x.data.id == id);
+      this.nodeDetails.node_name = node.data.id;
+      this.nodeDetails.x_point = node.position.x;
+      this.nodeDetails.y_point = node.position.y;
+      this.nodeDetails.selected = node.selected != undefined ? node.selected : this.defaultItem.selected;
+      this.nodeDetails.selectable = node.selectable != undefined ? node.selectable: this.defaultItem.selectable;
+      this.nodeDetails.locked = node.locked != undefined ? node.locked : this.defaultItem.locked;
+      this.nodeDetails.grabbable = node.grabbable != undefined ? node.grabbable : this.defaultItem.grabbable;
+      this.nodeDetails.pannable = node.pannable != undefined ? node.pannable : this.defaultItem.pannable;
+      this.editedIndex = this.elements.indexOf(node);
+      this.nodeDetails = Object.assign({}, this.nodeDetails);
+      this.dialog = true;
     },
-    saveChanges(cy) {
-      console.log("The cy in save changes is", cy.json()["elements"]);
-      console.log(
-        "JSON data in save changes",
-        JSON.stringify(cy.json()["elements"])
-      );
-      this.json1_data = cy.json()["elements"];
-    },
-    addEdges(id) {
-      console.log("node click", id);
+    deleteGraphNode(id) {
+      let node = this.elements.find((x) => x.data.id == id);
+      this.editedIndex = this.elements.indexOf(node);
+      this.dialogDelete = true;
+      console.log(id)
     },
     deleteNode(id) {
       console.log("node clicked", id);
     },
     updateNode(event) {
+      
       console.log("right click node", event);
     },
     drawModeToggle() {
@@ -374,10 +416,11 @@ export default {
       this.dialog = true;
     },
     preConfig(cytoscape) {
-      if (!cytoscape("core", "contextMenus")) {
+      if (!cytoscape("core", "edgehandles")) {
         //cytoscape.use(cxtmenu);
-        contextMenus(cytoscape, jquery);
-        edgehandles(cytoscape);
+        //contextMenus(cytoscape, jquery);
+        
+      edgehandles(cytoscape);
       }
 
       // cytoscape.use(edgehandles);
@@ -387,35 +430,35 @@ export default {
       console.log("After created called");
       // cy: this is the cytoscape instance
       console.log("after created", cy);
-      cy.contextMenus({
-        menuItems: [
-          {
-            id: "remove",
-            content: "remove",
-            tooltipText: "remove",
-            image: { src: "remove.svg", width: 12, height: 12, x: 6, y: 4 },
-            selector: "node, edge",
-            onClickFunction: function (event) {
-              var target = event.target || event.cyTarget;
-              console.log(target)
-              target.remove();
-            },
-            hasTrailingDivider: true,
-          },
-          {
-            id: "edit",
-            content: "edit",
-            tooltipText: "edit",
-            selector: "*",
-            onClickFunction: () => {
-              //var target = event.target || event.cyTarget;
-              //target.hide();
-              console.log("This is edit rc", JSON.stringify(this.elements));
-            },
-            disabled: false,
-          },
-        ],
-      });
+      // cy.contextMenus({
+      //   menuItems: [
+      //     {
+      //       id: "remove",
+      //       content: "remove",
+      //       tooltipText: "remove",
+      //       image: { src: "remove.svg", width: 12, height: 12, x: 6, y: 4 },
+      //       selector: "node, edge",
+      //       onClickFunction: function (event) {
+      //         var target = event.target || event.cyTarget;
+      //         console.log(target);
+      //         target.remove();
+      //       },
+      //       hasTrailingDivider: true,
+      //     },
+      //     {
+      //       id: "edit",
+      //       content: "edit",
+      //       tooltipText: "edit",
+      //       selector: "*",
+      //       onClickFunction: () => {
+      //         //var target = event.target || event.cyTarget;
+      //         //target.hide();
+      //         console.log("This is edit rc", JSON.stringify(this.elements));
+      //       },
+      //       disabled: false,
+      //     },
+      //   ],
+      // });
       var eh = cy.edgehandles({
         canConnect: function (sourceNode, targetNode) {
           // whether an edge can be created between source and target
@@ -433,7 +476,7 @@ export default {
               source: sourceNode,
               target: targetNode,
             },
-            group:"edges"
+            group: "edges",
           };
           console.log(newEdge);
           //console.log(this.elements);
