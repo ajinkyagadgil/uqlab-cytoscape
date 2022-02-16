@@ -239,7 +239,7 @@ export default {
   },
   computed: {
     formTitle() {
-      return this.editedIndex === -1 ? "New Graph" : "Edit Graph";
+      return this.editedIndex === -1 ? "New Node" : "Edit Node";
     },
   },
   watch: {
@@ -345,6 +345,11 @@ export default {
         node_name: "",
         x_point: 0,
         y_point: 0,
+        selected: this.defaultItem.selected,
+        selectable: this.defaultItem.selectable,
+        locked: this.defaultItem.locked,
+        grabbable: this.defaultItem.grabbable,
+        pannable: this.defaultItem.pannable
       };
       if (event.target === this.$refs.cyRef.instance) {
         this.nodeDetails.x_point = event.originalEvent.layerX;
