@@ -93,6 +93,7 @@
           </v-card>
         </v-dialog>
       </cytoscape>
+      <v-btn depressed color="primary" @click="saveAll()"> Save Changes </v-btn>
     </div>
   </div>
   <!-- <v-container>
@@ -239,6 +240,29 @@ export default {
     },
   },
   methods: {
+    saveAll(){
+      let n = this.elements.filter(x => x.group == "nodes");
+      let e = this.elements.filter(x => x.group == "edges")
+      console.log("The nodes are", JSON.stringify(n));
+      console.log("The edges are",JSON.stringify(e));
+      console.log("Final Changes are", JSON.stringify(this.elements))
+       let graphData = {
+         nodes: n,
+         edges: e
+       }
+       console.log("Final data to be saved is", JSON.stringify(graphData));
+       const dataToSave = {
+        data: {
+          data: graphData
+        },
+      };
+       axios
+        .put(`http://localhost:1337/api/graphs/${this.$route.params.id}`, dataToSave)
+        .then((response) => {
+          console.log(response);
+        });
+    },
+
     getCy: function () {
       return null;
     },
@@ -248,6 +272,9 @@ export default {
         this.editedItem = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       });
+    },
+    addEdgesToObject(edge) {
+      this.elements = [...this.elements, edge]
     },
     addNode() {
       // console.log("This is cy ref",this.$refs.cyRef.cy)
@@ -343,6 +370,9 @@ export default {
     drawModeToggle() {
       this.isDrawMode = !this.isDrawMode;
     },
+    toggleDialog() {
+      this.dialog = true;
+    },
     preConfig(cytoscape) {
       if (!cytoscape("core", "contextMenus")) {
         //cytoscape.use(cxtmenu);
@@ -367,18 +397,20 @@ export default {
             selector: "node, edge",
             onClickFunction: function (event) {
               var target = event.target || event.cyTarget;
+              console.log(target)
               target.remove();
             },
             hasTrailingDivider: true,
           },
           {
-            id: "hide",
-            content: "hide",
-            tooltipText: "hide",
+            id: "edit",
+            content: "edit",
+            tooltipText: "edit",
             selector: "*",
-            onClickFunction: function (event) {
-              var target = event.target || event.cyTarget;
-              target.hide();
+            onClickFunction: () => {
+              //var target = event.target || event.cyTarget;
+              //target.hide();
+              console.log("This is edit rc", JSON.stringify(this.elements));
             },
             disabled: false,
           },
@@ -389,23 +421,28 @@ export default {
           // whether an edge can be created between source and target
           return !sourceNode.same(targetNode); // e.g. disallow loops
         },
-        edgeParams: function (sourceNode, targetNode) {
+        edgeParams: (sourceNode, targetNode) => {
           console.log("Soure node is", sourceNode);
           console.log("Dest node is", targetNode);
-          console.log("This is cy", cy);
           // for edges between the specified source and target
           // return element object to be passed to cy.add() for edge
 
-          // const newEdge = {
-          //   data: {
-          //     id: sourceNode + targetNode,
-          //     source: sourceNode,
-          //     target: targetNode,
-          //   },
-          //   group:"edges"
-          // };
+          const newEdge = {
+            data: {
+              id: sourceNode + targetNode,
+              source: sourceNode,
+              target: targetNode,
+            },
+            group:"edges"
+          };
+          console.log(newEdge);
+          //console.log(this.elements);
+          //this.elements.push(newEdge);
           // cy.add(newEdge)
           // this.saveChanges()
+          //this.addEdgesToObject(newEdge)
+          //this.elements = [...this.elements, newEdge];
+
           return {};
         },
         cxt: true,
