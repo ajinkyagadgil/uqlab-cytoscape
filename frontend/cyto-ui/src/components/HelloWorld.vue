@@ -7,7 +7,6 @@
         ref="cyRef"
         :config="config"
         v-on:mousedown="addNodeDetails"
-        v-on:cxttapstart="updateNode"
         :preConfig="preConfig"
         :afterCreated="afterCreated"
       >
@@ -15,8 +14,7 @@
           v-for="def in elements"
           :key="`${def.data.id}`"
           :definition="def"
-          v-on:cxttap="deleteGraphNode(def.data.id)"
-          v-on:mousedown="updateGraphNode(def.data.id)"
+          v-on:cxttap="updateGraphNode(def.data.id)"
         />
         <v-dialog v-model="dialog" max-width="500px">
           <v-card>
@@ -71,6 +69,8 @@
 
             <v-card-actions>
               <v-spacer></v-spacer>
+              
+              <v-btn color="blue darken-1" v-if="editedIndex != -1" text @click="deleteItemConfirm"> Delete </v-btn>
               <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
               <v-btn color="blue darken-1" text @click="addNode"> Save </v-btn>
             </v-card-actions>
@@ -296,6 +296,7 @@ export default {
     },
     deleteItemConfirm() {
       this.elements.splice(this.editedIndex, 1);
+      this.close();
       this.closeDelete();
     },
     addEdgesToObject(edge) {
@@ -470,6 +471,7 @@ export default {
           return !sourceNode.same(targetNode); // e.g. disallow loops
         },
         edgeParams: (sourceNode, targetNode) => {
+          console.log(sourceNode.data().id)
           console.log("Soure node is", sourceNode);
           console.log("Dest node is", targetNode);
           // for edges between the specified source and target
@@ -477,22 +479,20 @@ export default {
 
           const newEdge = {
             data: {
-              id: sourceNode + targetNode,
-              source: sourceNode,
-              target: targetNode,
+              id: sourceNode.data().id + targetNode.data().id,
+              source: sourceNode.data().id,
+              target: targetNode.data().id,
             },
             group: "edges",
           };
+       
           console.log(newEdge);
-          //console.log(this.elements);
-          //this.elements.push(newEdge);
-          // cy.add(newEdge)
-          // this.saveChanges()
-          //this.addEdgesToObject(newEdge)
-          //this.elements = [...this.elements, newEdge];
+          this.elements = [...this.elements, newEdge];
+          console.log('After adding edges',JSON.stringify(this.elements));   
 
-          return {};
+          //return { group: 'edges', data: { id: sourceNode+targetNode, source: sourceNode, target: targetNode } };
         },
+        
         cxt: true,
         enabled: true,
         hoverDelay: 150, // time spent hovering over a target node before it is considered selected
@@ -503,7 +503,7 @@ export default {
         disableBrowserGestures: true, // during an edge drawing gesture, disable browser gestures such as two-finger trackpad swipe and pinch-to-zoom
       });
       console.log("Draw Mode", this.isDrawMode);
-
+      // console.log("Edge param is",eh.edgeParams)
       // document.querySelector("#draw-on").addEventListener("click", function () {
       //   eh.enableDrawMode();
       // });
@@ -520,7 +520,9 @@ export default {
       // }
       // if(this.isDrawMode) {
       eh.enableDrawMode();
-      console.log(eh);
+      console.log("EH is",eh);
+
+
       // }
     },
   },
