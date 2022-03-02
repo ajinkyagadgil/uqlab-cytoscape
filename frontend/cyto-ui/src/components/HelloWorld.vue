@@ -203,25 +203,17 @@ export default {
         nodes: n,
         edges: e,
       };
-      console.log("Final data to be saved is", JSON.stringify(graphData));
       const dataToSave = {
         data: {
           data: graphData,
         },
       };
-      axios
-        .put(
-          `http://localhost:1337/api/graphs/${this.$route.params.id}`,
-          dataToSave
-        )
+      axios.put(`http://localhost:1337/api/graphs/${this.$route.params.id}`, dataToSave)
         .then((response) => {
           console.log(response);
         });
     },
 
-    getCy: function () {
-      return null;
-    },
     close() {
       this.dialog = false;
       this.$nextTick(() => {
@@ -240,9 +232,6 @@ export default {
       this.elements.splice(this.editedIndex, 1);
       this.close();
       this.closeDelete();
-    },
-    addEdgesToObject(edge) {
-      this.elements = [...this.elements, edge];
     },
     addNode() {
       // console.log("This is cy ref",this.$refs.cyRef.cy)
@@ -378,9 +367,6 @@ export default {
     updateNode(event) {
       console.log("right click node", event);
     },
-    drawModeToggle() {
-      this.isDrawMode = !this.isDrawMode;
-    },
     toggleDialog() {
       this.dialog = true;
     },
@@ -509,58 +495,7 @@ export default {
       return cy;
     };
   },
-  // data: () => ({
-  //   ecosystem: [
-  //     {
-  //       text: 'vuetify-loader',
-  //       href: 'https://github.com/vuetifyjs/vuetify-loader',
-  //     },
-  //     {
-  //       text: 'github',
-  //       href: 'https://github.com/vuetifyjs/vuetify',
-  //     },
-  //     {
-  //       text: 'awesome-vuetify',
-  //       href: 'https://github.com/vuetifyjs/awesome-vuetify',
-  //     },
-  //   ],
-  //   importantLinks: [
-  //     {
-  //       text: 'Documentation',
-  //       href: 'https://vuetifyjs.com',
-  //     },
-  //     {
-  //       text: 'Chat',
-  //       href: 'https://community.vuetifyjs.com',
-  //     },
-  //     {
-  //       text: 'Made with Vuetify',
-  //       href: 'https://madewithvuejs.com/vuetify',
-  //     },
-  //     {
-  //       text: 'Twitter',
-  //       href: 'https://twitter.com/vuetifyjs',
-  //     },
-  //     {
-  //       text: 'Articles',
-  //       href: 'https://medium.com/vuetify',
-  //     },
-  //   ],
-  //   whatsNext: [
-  //     {
-  //       text: 'Explore components',
-  //       href: 'https://vuetifyjs.com/components/api-explorer',
-  //     },
-  //     {
-  //       text: 'Select a layout',
-  //       href: 'https://vuetifyjs.com/getting-started/pre-made-layouts',
-  //     },
-  //     {
-  //       text: 'Frequently Asked Questions',
-  //       href: 'https://vuetifyjs.com/getting-started/frequently-asked-questions',
-  //     },
-  //   ],
-  // }),
+  
 };
 </script>
 <style>
