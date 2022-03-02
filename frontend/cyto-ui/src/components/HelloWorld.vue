@@ -64,13 +64,39 @@
                     ></v-checkbox>
                   </v-col>
                 </v-row>
+                <v-row>
+                  <v-col>
+                    <v-select
+                      v-model="nodeDetails.nodeType"
+                      :items="nodeTypes"
+                      item-text="nodeType"
+                      item-value="value"
+                      label="Select Node Type"
+                    ></v-select>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col  v-if="nodeDetails.nodeType==0" >
+                    <v-slider v-model="nodeDetails.nodeTypeValue" min="1" max="10" :thumb-color="sliderColor" thumb-label="always" label=""> </v-slider>
+                  </v-col>
+                  <v-col v-if="nodeDetails.nodeType==1">
+                    <v-slider v-model="nodeDetails.nodeTypeValue" min="-9999" max="9999" :thumb-color="sliderColor" thumb-label="always" label=""> </v-slider>
+                  </v-col>
+                </v-row>
               </v-container>
             </v-card-text>
 
             <v-card-actions>
               <v-spacer></v-spacer>
-              
-              <v-btn color="blue darken-1" v-if="editedIndex != -1" text @click="deleteItemConfirm"> Delete </v-btn>
+
+              <v-btn
+                color="blue darken-1"
+                v-if="editedIndex != -1"
+                text
+                @click="deleteItemConfirm"
+              >
+                Delete
+              </v-btn>
               <v-btn color="blue darken-1" text @click="close"> Cancel </v-btn>
               <v-btn color="blue darken-1" text @click="addNode"> Save </v-btn>
             </v-card-actions>
@@ -97,96 +123,6 @@
       <v-btn depressed color="primary" @click="saveAll()"> Save Changes </v-btn>
     </div>
   </div>
-  <!-- <v-container>
-    <v-row class="text-center">
-      <v-col cols="12">
-        <v-img
-          :src="require('../assets/logo.svg')"
-          class="my-3"
-          contain
-          height="200"
-        />
-      </v-col>
-
-      <v-col class="mb-4">
-        <h1 class="display-2 font-weight-bold mb-3">
-          Welcome to Vuetify
-        </h1>
-
-        <p class="subheading font-weight-regular">
-          For help and collaboration with other Vuetify developers,
-          <br>please join our online
-          <a
-            href="https://community.vuetifyjs.com"
-            target="_blank"
-          >Discord Community</a>
-        </p>
-      </v-col>
-
-      <v-col
-        class="mb-5"
-        cols="12"
-      >
-        <h2 class="headline font-weight-bold mb-3">
-          What's next?
-        </h2>
-
-        <v-row justify="center">
-          <a
-            v-for="(next, i) in whatsNext"
-            :key="i"
-            :href="next.href"
-            class="subheading mx-3"
-            target="_blank"
-          >
-            {{ next.text }}
-          </a>
-        </v-row>
-      </v-col>
-
-      <v-col
-        class="mb-5"
-        cols="12"
-      >
-        <h2 class="headline font-weight-bold mb-3">
-          Important Links
-        </h2>
-
-        <v-row justify="center">
-          <a
-            v-for="(link, i) in importantLinks"
-            :key="i"
-            :href="link.href"
-            class="subheading mx-3"
-            target="_blank"
-          >
-            {{ link.text }}
-          </a>
-        </v-row>
-      </v-col>
-
-      <v-col
-        class="mb-5"
-        cols="12"
-      >
-        <h2 class="headline font-weight-bold mb-3">
-          Ecosystem
-        </h2>
-
-        <v-row justify="center">
-          <a
-            v-for="(eco, i) in ecosystem"
-            :key="i"
-            :href="eco.href"
-            class="subheading mx-3"
-            target="_blank"
-          >
-            {{ eco.text }}
-          </a>
-        </v-row>
-      </v-col>
-    </v-row>
-  </v-container> -->
 </template>
 
 <script>
@@ -223,6 +159,8 @@ export default {
         locked: false,
         grabbable: true,
         pannable: true,
+        nodeType: 0,
+        nodeTypeValue:0 
       },
       defaultItem: {
         node_name: "",
@@ -233,8 +171,15 @@ export default {
         locked: false,
         grabbable: true,
         pannable: true,
+        nodeType: 0,
+        nodeTypeValue:0 
       },
+      sliderColor: "blue",
       cy: null,
+      nodeTypes: [
+        { nodeType: "Categorical", value: 0 },
+        { nodeType: "Numerical", value: 1 },
+      ],
     };
   },
   computed: {
@@ -254,9 +199,6 @@ export default {
     saveAll() {
       let n = this.elements.filter((x) => x.group == "nodes");
       let e = this.elements.filter((x) => x.group == "edges");
-      console.log("The nodes are", JSON.stringify(n));
-      console.log("The edges are", JSON.stringify(e));
-      console.log("Final Changes are", JSON.stringify(this.elements));
       let graphData = {
         nodes: n,
         edges: e,
@@ -305,6 +247,7 @@ export default {
     addNode() {
       // console.log("This is cy ref",this.$refs.cyRef.cy)
       console.log("Edited index is", this.editedIndex);
+      console.log(this.nodeDetails.nodeType);
       if (this.editedIndex == -1) {
         //add new node {
         const nextNode = {
@@ -319,17 +262,23 @@ export default {
           locked: this.nodeDetails.locked,
           grabbable: this.nodeDetails.grabbable,
           pannable: this.nodeDetails.pannable,
+          typeParams: {
+            nodeType: this.nodeDetails.nodeType,
+            nodeTypeValue: this.nodeDetails.nodeTypeValue
+          }
         };
         this.elements = [...this.elements, nextNode];
       } else {
         let element = this.elements[this.editedIndex];
         console.log("The original element is", JSON.stringify(element));
         element.data.id = this.nodeDetails.node_name;
-        element.selected= this.nodeDetails.selected;
-        element.selectable= this.nodeDetails.selectable;
-        element.locked= this.nodeDetails.locked;
-        element.grabbable= this.nodeDetails.grabbable;
-        element.pannable= this.nodeDetails.pannable;
+        element.selected = this.nodeDetails.selected;
+        element.selectable = this.nodeDetails.selectable;
+        element.locked = this.nodeDetails.locked;
+        element.grabbable = this.nodeDetails.grabbable;
+        element.pannable = this.nodeDetails.pannable;
+        element.typeParams.nodeType = this.nodeDetails.nodeType;
+        element.typeParams.nodeTypeValue = this.nodeDetails.nodeTypeValue;
         console.log("AAfter update", JSON.stringify(this.elements));
       }
       //cy.add(nextNode)
@@ -350,7 +299,9 @@ export default {
         selectable: this.defaultItem.selectable,
         locked: this.defaultItem.locked,
         grabbable: this.defaultItem.grabbable,
-        pannable: this.defaultItem.pannable
+        pannable: this.defaultItem.pannable,
+        nodeType: this.defaultItem.nodeType,
+        nodeTypeValue:this.defaultItem.nodeTypeValue
       };
       if (event.target === this.$refs.cyRef.instance) {
         this.nodeDetails.x_point = event.originalEvent.layerX;
@@ -360,6 +311,8 @@ export default {
         this.nodeDetails.locked = this.defaultItem.locked;
         this.nodeDetails.grabbable = this.defaultItem.grabbable;
         this.nodeDetails.pannable = this.defaultItem.pannable;
+        this.nodeDetails.nodeType = this.defaultItem.nodeType;
+        this.nodeDetails.nodeTypeValue = this.defaultItem.nodeTypeValue;
         this.dialog = true;
       }
     },
@@ -393,11 +346,22 @@ export default {
       this.nodeDetails.node_name = node.data.id;
       this.nodeDetails.x_point = node.position.x;
       this.nodeDetails.y_point = node.position.y;
-      this.nodeDetails.selected = node.selected != undefined ? node.selected : this.defaultItem.selected;
-      this.nodeDetails.selectable = node.selectable != undefined ? node.selectable: this.defaultItem.selectable;
-      this.nodeDetails.locked = node.locked != undefined ? node.locked : this.defaultItem.locked;
-      this.nodeDetails.grabbable = node.grabbable != undefined ? node.grabbable : this.defaultItem.grabbable;
-      this.nodeDetails.pannable = node.pannable != undefined ? node.pannable : this.defaultItem.pannable;
+      this.nodeDetails.selected =
+        node.selected != undefined ? node.selected : this.defaultItem.selected;
+      this.nodeDetails.selectable =
+        node.selectable != undefined
+          ? node.selectable
+          : this.defaultItem.selectable;
+      this.nodeDetails.locked =
+        node.locked != undefined ? node.locked : this.defaultItem.locked;
+      this.nodeDetails.grabbable =
+        node.grabbable != undefined
+          ? node.grabbable
+          : this.defaultItem.grabbable;
+      this.nodeDetails.pannable =
+        node.pannable != undefined ? node.pannable : this.defaultItem.pannable;
+      this.nodeDetails.nodeType = node.typeParams.nodeType;
+      this.nodeDetails.nodeTypeValue = node.typeParams.nodeTypeValue;
       this.editedIndex = this.elements.indexOf(node);
       this.nodeDetails = Object.assign({}, this.nodeDetails);
       this.dialog = true;
@@ -406,13 +370,12 @@ export default {
       let node = this.elements.find((x) => x.data.id == id);
       this.editedIndex = this.elements.indexOf(node);
       this.dialogDelete = true;
-      console.log(id)
+      console.log(id);
     },
     deleteNode(id) {
       console.log("node clicked", id);
     },
     updateNode(event) {
-      
       console.log("right click node", event);
     },
     drawModeToggle() {
@@ -425,8 +388,8 @@ export default {
       if (!cytoscape("core", "edgehandles")) {
         //cytoscape.use(cxtmenu);
         //contextMenus(cytoscape, jquery);
-        
-      edgehandles(cytoscape);
+
+        edgehandles(cytoscape);
       }
 
       // cytoscape.use(edgehandles);
@@ -471,7 +434,7 @@ export default {
           return !sourceNode.same(targetNode); // e.g. disallow loops
         },
         edgeParams: (sourceNode, targetNode) => {
-          console.log(sourceNode.data().id)
+          console.log(sourceNode.data().id);
           console.log("Soure node is", sourceNode);
           console.log("Dest node is", targetNode);
           // for edges between the specified source and target
@@ -485,14 +448,14 @@ export default {
             },
             group: "edges",
           };
-       
+
           console.log(newEdge);
           this.elements = [...this.elements, newEdge];
-          console.log('After adding edges',JSON.stringify(this.elements));   
+          console.log("After adding edges", JSON.stringify(this.elements));
 
           //return { group: 'edges', data: { id: sourceNode+targetNode, source: sourceNode, target: targetNode } };
         },
-        
+
         cxt: true,
         enabled: true,
         hoverDelay: 150, // time spent hovering over a target node before it is considered selected
@@ -520,8 +483,7 @@ export default {
       // }
       // if(this.isDrawMode) {
       eh.enableDrawMode();
-      console.log("EH is",eh);
-
+      console.log("EH is", eh);
 
       // }
     },
