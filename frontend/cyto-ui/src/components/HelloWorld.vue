@@ -34,38 +34,6 @@
                 </v-row>
                 <v-row>
                   <v-col>
-                    <v-checkbox
-                      v-model="nodeDetails.selected"
-                      label="Selected"
-                    ></v-checkbox>
-                  </v-col>
-                  <v-col>
-                    <v-checkbox
-                      v-model="nodeDetails.selectable"
-                      label="Selectable"
-                    ></v-checkbox>
-                  </v-col>
-                  <v-col>
-                    <v-checkbox
-                      v-model="nodeDetails.locked"
-                      label="Locked"
-                    ></v-checkbox>
-                  </v-col>
-                  <v-col>
-                    <v-checkbox
-                      v-model="nodeDetails.grabbable"
-                      label="Grabbable"
-                    ></v-checkbox>
-                  </v-col>
-                  <v-col>
-                    <v-checkbox
-                      v-model="nodeDetails.pannable"
-                      label="Pannable"
-                    ></v-checkbox>
-                  </v-col>
-                </v-row>
-                <v-row>
-                  <v-col>
                     <v-select
                       v-model="nodeDetails.nodeType"
                       :items="nodeTypes"
@@ -121,6 +89,14 @@
         </v-dialog>
       </cytoscape>
       <v-btn depressed color="primary" @click="saveAll()"> Save Changes </v-btn>
+      <v-row>
+        <v-col>
+          <v-slider v-model="dataGenerateValue" min="50" max="300" :thumb-color="sliderColor" thumb-label="always" label=""> </v-slider>
+        <v-btn depressed color="primary" @click="generateData(dataGenerateValue)"> Generate Data </v-btn>
+        </v-col>
+
+      </v-row>
+      
     </div>
   </div>
 </template>
@@ -150,15 +126,11 @@ export default {
       isDrawMode: false,
       json1_data: "",
       editedIndex: -1,
+      dataGenerateValue: 50,
       nodeDetails: {
         node_name: "",
         x_point: 0,
         y_point: 0,
-        selected: false,
-        selectable: false,
-        locked: false,
-        grabbable: true,
-        pannable: true,
         nodeType: 0,
         nodeTypeValue:0 
       },
@@ -166,11 +138,6 @@ export default {
         node_name: "",
         x_point: 0,
         y_point: 0,
-        selected: false,
-        selectable: false,
-        locked: false,
-        grabbable: true,
-        pannable: true,
         nodeType: 0,
         nodeTypeValue:0 
       },
@@ -196,6 +163,46 @@ export default {
     },
   },
   methods: {
+    saveJSON(data, filename){
+    if(!data) {
+        console.error('No data')
+        return;
+    }
+    if(!filename) filename = 'console.json'
+
+    if(typeof data === "object"){
+        data = JSON.stringify(data, undefined, 4)
+    }
+    var blob = new Blob([data], {type: 'text/json'}),
+        e    = document.createEvent('MouseEvents'),
+        a    = document.createElement('a')
+
+    a.download = filename
+    a.href = window.URL.createObjectURL(blob)
+    a.dataset.downloadurl =  ['text/json', a.download, a.href].join(':')
+    e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
+    a.dispatchEvent(e)
+},
+
+    generateData(value){    
+      let n = this.elements.filter((x) => x.group == "nodes");
+      let e = this.elements.filter((x) => x.group == "edges");
+      let graphData = {
+        nodes: n,
+        edges: e,
+      }; 
+      axios
+      .post('http://localhost:8000/getData?no_samples=' + value, graphData)
+      .then(response => {
+        console.log(response.data);
+        this.saveJSON(response.data, 'genData-' + value + '.json')
+        
+      })
+      .catch(error => {
+        console.log(error)
+      })
+      
+    },
     saveAll() {
       let n = this.elements.filter((x) => x.group == "nodes");
       let e = this.elements.filter((x) => x.group == "edges");
@@ -229,6 +236,7 @@ export default {
       });
     },
     deleteItemConfirm() {
+
       this.elements.splice(this.editedIndex, 1);
       this.close();
       this.closeDelete();
@@ -246,11 +254,6 @@ export default {
             y: this.nodeDetails.y_point,
           },
           group: "nodes",
-          selected: this.nodeDetails.selected,
-          selectable: this.nodeDetails.selectable,
-          locked: this.nodeDetails.locked,
-          grabbable: this.nodeDetails.grabbable,
-          pannable: this.nodeDetails.pannable,
           typeParams: {
             nodeType: this.nodeDetails.nodeType,
             nodeTypeValue: this.nodeDetails.nodeTypeValue
@@ -261,11 +264,6 @@ export default {
         let element = this.elements[this.editedIndex];
         console.log("The original element is", JSON.stringify(element));
         element.data.id = this.nodeDetails.node_name;
-        element.selected = this.nodeDetails.selected;
-        element.selectable = this.nodeDetails.selectable;
-        element.locked = this.nodeDetails.locked;
-        element.grabbable = this.nodeDetails.grabbable;
-        element.pannable = this.nodeDetails.pannable;
         element.typeParams.nodeType = this.nodeDetails.nodeType;
         element.typeParams.nodeTypeValue = this.nodeDetails.nodeTypeValue;
         console.log("AAfter update", JSON.stringify(this.elements));
@@ -284,22 +282,12 @@ export default {
         node_name: "",
         x_point: 0,
         y_point: 0,
-        selected: this.defaultItem.selected,
-        selectable: this.defaultItem.selectable,
-        locked: this.defaultItem.locked,
-        grabbable: this.defaultItem.grabbable,
-        pannable: this.defaultItem.pannable,
         nodeType: this.defaultItem.nodeType,
         nodeTypeValue:this.defaultItem.nodeTypeValue
       };
       if (event.target === this.$refs.cyRef.instance) {
         this.nodeDetails.x_point = event.originalEvent.layerX;
         this.nodeDetails.y_point = event.originalEvent.layerY;
-        this.nodeDetails.selected = this.defaultItem.selected;
-        this.nodeDetails.selectable = this.defaultItem.selectable;
-        this.nodeDetails.locked = this.defaultItem.locked;
-        this.nodeDetails.grabbable = this.defaultItem.grabbable;
-        this.nodeDetails.pannable = this.defaultItem.pannable;
         this.nodeDetails.nodeType = this.defaultItem.nodeType;
         this.nodeDetails.nodeTypeValue = this.defaultItem.nodeTypeValue;
         this.dialog = true;
@@ -335,20 +323,6 @@ export default {
       this.nodeDetails.node_name = node.data.id;
       this.nodeDetails.x_point = node.position.x;
       this.nodeDetails.y_point = node.position.y;
-      this.nodeDetails.selected =
-        node.selected != undefined ? node.selected : this.defaultItem.selected;
-      this.nodeDetails.selectable =
-        node.selectable != undefined
-          ? node.selectable
-          : this.defaultItem.selectable;
-      this.nodeDetails.locked =
-        node.locked != undefined ? node.locked : this.defaultItem.locked;
-      this.nodeDetails.grabbable =
-        node.grabbable != undefined
-          ? node.grabbable
-          : this.defaultItem.grabbable;
-      this.nodeDetails.pannable =
-        node.pannable != undefined ? node.pannable : this.defaultItem.pannable;
       this.nodeDetails.nodeType = node.typeParams.nodeType;
       this.nodeDetails.nodeTypeValue = node.typeParams.nodeTypeValue;
       this.editedIndex = this.elements.indexOf(node);
