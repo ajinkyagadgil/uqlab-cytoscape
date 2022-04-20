@@ -145,13 +145,19 @@ export default {
     },
 
     deleteItem(item) {
-      this.editedIndex = this.desserts.indexOf(item);
-      this.editedItem = Object.assign({}, item);
+      this.editedIndex = this.graphs[0].data.indexOf(item);
       this.dialogDelete = true;
     },
 
     deleteItemConfirm() {
-      this.desserts.splice(this.editedIndex, 1);
+      let graphToDelete = this.graphs[0].data[this.editedIndex];
+      axios
+        .delete(`http://localhost:1337/api/graphs/${graphToDelete.id}`)
+        .then((response) => {
+          if (response.status == 200) {
+            this.graphs[0].data.splice(this.editedIndex, 1);
+          }
+        });
       this.closeDelete();
     },
 
@@ -172,7 +178,6 @@ export default {
     },
 
     async save() {
-      console.log("Added item is", JSON.stringify(this.editedItem));
       const graphNameCreate = {
         data: {
           Name: this.editedItem.graph_name,

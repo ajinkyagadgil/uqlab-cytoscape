@@ -61,7 +61,7 @@
                 color="blue darken-1"
                 v-if="editedIndex != -1"
                 text
-                @click="deleteItemConfirm"
+                @click="deleteItemConfirmDialog"
               >
                 Delete
               </v-btn>
@@ -235,8 +235,18 @@ export default {
         this.editedIndex = -1;
       });
     },
+    deleteItemConfirmDialog() {
+      this.dialogDelete = true;
+    },
     deleteItemConfirm() {
-
+      //let elemenToDelete = JSON.stringify(this.elements[this.editedIndex])
+      this.elements.forEach(element => {
+        //if the type of node is edge and if the source or destination is equal to node to be deleted then delete object
+        if(element.group == 'edges' && (element.data.source==this.elements[this.editedIndex].data.id || element.data.target==this.elements[this.editedIndex].data.id)) {
+          this.elements.splice(this.elements.indexOf(element), 1);
+          console.log(this.$route.params.id)
+        }
+      })
       this.elements.splice(this.editedIndex, 1);
       this.close();
       this.closeDelete();
