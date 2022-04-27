@@ -111,7 +111,7 @@ import cytoscape from "cytoscape";
 
 // import cytoscape from 'cytoscape';
 import edgehandles from "cytoscape-edgehandles";
-
+import endpoints from "../assets/endpoints"
 // const elements = [...config.elements];
 const elements = [];
 delete config.elements;
@@ -192,7 +192,7 @@ export default {
         edges: e,
       }; 
       axios
-      .post('http://localhost:8000/getData?no_samples=' + value, graphData)
+      .post(endpoints.fastAPIEndpoint +'getData?no_samples=' + value, graphData)
       .then(response => {
         console.log(response.data);
         this.saveJSON(response.data, 'genData-' + value + '.json')
@@ -215,7 +215,7 @@ export default {
           data: graphData,
         },
       };
-      axios.put(`http://localhost:1337/api/graphs/${this.$route.params.id}`, dataToSave)
+      axios.put(`${endpoints.strAPIEndpoint}api/graphs/${this.$route.params.id}`, dataToSave)
         .then((response) => {
           console.log(response);
         });
@@ -284,7 +284,7 @@ export default {
       console.log(JSON.stringify(this.elements));
     },
     async getGraphData(id) {
-      const res = await fetch(`http://localhost:1337/api/graphs/${id}`);
+      const res = await fetch(`${endpoints.strAPIEndpoint}api/graphs/${id}`);
       return res.json();
     },
     addNodeDetails(event) {

@@ -97,6 +97,7 @@
 
 <script>
 import axios from "axios";
+import endpoints from "../assets/endpoints"
 export default {
   data: () => ({
     dialog: false,
@@ -152,7 +153,7 @@ export default {
     deleteItemConfirm() {
       let graphToDelete = this.graphs[0].data[this.editedIndex];
       axios
-        .delete(`http://localhost:1337/api/graphs/${graphToDelete.id}`)
+        .delete(`${endpoints.strAPIEndpoint}api/graphs/${graphToDelete.id}`)
         .then((response) => {
           if (response.status == 200) {
             this.graphs[0].data.splice(this.editedIndex, 1);
@@ -185,7 +186,7 @@ export default {
       };
       // console.log(JSON.stringify(data))
       axios
-        .post("http://localhost:1337/api/graphs", graphNameCreate)
+        .post(endpoints.strAPIEndpoint + "api/graphs", graphNameCreate)
         .then((response) => {
           if (response.status == 200) {
             console.log("The response is", response.data.data.id);
@@ -205,7 +206,7 @@ export default {
     },
 
     async fetchData() {
-      const res = await fetch("http://localhost:1337/api/graphs");
+      const res = await fetch(endpoints.strAPIEndpoint + "api/graphs");
       return res.json();
     },
   },

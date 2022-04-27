@@ -1,0 +1,4 @@
+{
+    "strAPIEndpoint":"http://localhost:1337/",
+    "fastAPIEndpoint":"http://localhost:8000/"
+}
